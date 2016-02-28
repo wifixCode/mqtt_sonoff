@@ -15,6 +15,10 @@
   Written by Tony DiCola for Adafruit Industries.
   MIT license, all text above must be included in any redistribution
  ****************************************************/
+
+
+
+
 #include <ESP8266WiFi.h>
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
@@ -49,11 +53,6 @@ Adafruit_MQTT_Client mqtt(&client, MQTT_SERVER, AIO_SERVERPORT, MQTT_USERNAME, M
 
 /****************************** Feeds ***************************************/
 
-// Setup a feed called 'photocell' for publishing.
-// Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname>
-const char PHOTOCELL_FEED[] PROGMEM = AIO_USERNAME "/feeds/photocell";
-Adafruit_MQTT_Publish photocell = Adafruit_MQTT_Publish(&mqtt, PHOTOCELL_FEED);
-
 // Setup a feed called 'onoff' for subscribing to changes.
 const char ONOFF_FEED[] PROGMEM = AIO_USERNAME "/feeds/onoff";
 Adafruit_MQTT_Subscribe onoffbutton = Adafruit_MQTT_Subscribe(&mqtt, ONOFF_FEED);
@@ -69,6 +68,8 @@ void MQTT_connect();
 #define LED 13
 #define SWITCH 0
 
+boolean toggle = false;
+
 void setup() {
   Serial.begin(115200);
   delay(10);
@@ -77,7 +78,7 @@ void setup() {
   digitalWrite(LED, HIGH);
   pinMode(SWITCH, INPUT_PULLUP);
 
-  Serial.println(F("Adafruit MQTT demo"));
+  Serial.println(F("Adafruit MQTT SONOFF Demo"));
 
   // Connect to WiFi access point.
   Serial.println(); Serial.println();
@@ -88,12 +89,14 @@ void setup() {
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
+    toggle = !toggle;
+    digitalWrite(LED, toggle);
   }
   Serial.println();
 
   Serial.println("WiFi connected");
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
-
+  digitalWrite(LED, HIGH);
   // Setup MQTT subscription for onoff feed.
   mqtt.subscribe(&onoffbutton);
 }
@@ -156,14 +159,7 @@ void loop() {
   manualRelay();
 
   // Now we can publish stuff!
-  Serial.print(F("\nSending photocell val "));
-  Serial.print(x);
-  Serial.print("...");
-  if (! photocell.publish(x++)) {
-    Serial.println(F("Failed"));
-  } else {
-    Serial.println(F("OK!"));
-  }
+
 
   // ping the server to keep the mqtt connection alive
   // NOT required if you are publishing once every KEEPALIVE seconds
